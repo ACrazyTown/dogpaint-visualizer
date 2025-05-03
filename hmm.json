@@ -1,0 +1,21 @@
+{
+  "dependencies": [
+    {
+      "name": "flixel",
+      "type": "git",
+      "dir": null,
+      "ref": "dev",
+      "url": "https://github.com/HaxeFlixel/flixel"
+    },
+    {
+      "name": "lime",
+      "type": "haxelib",
+      "version": null
+    },
+    {
+      "name": "openfl",
+      "type": "haxelib",
+      "version": null
+    }
+  ]
+}
