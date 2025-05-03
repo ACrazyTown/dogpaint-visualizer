@@ -8,6 +8,13 @@
       "url": "https://github.com/HaxeFlixel/flixel"
     },
     {
+      "name": "flixel-waveform",
+      "type": "git",
+      "dir": null,
+      "ref": "8c77b57",
+      "url": "https://github.com/ACrazyTown/flixel-waveform"
+    },
+    {
       "name": "hscript",
       "type": "haxelib",
       "version": "2.6.0"
