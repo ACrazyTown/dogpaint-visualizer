@@ -5,12 +5,17 @@ import flixel.FlxG;
 import flixel.FlxSprite;
 import flixel.FlxState;
 import flixel.addons.display.waveform.FlxWaveform;
+import flixel.addons.plugin.taskManager.FlxTask;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
+import flixel.math.FlxPoint;
 import flixel.math.FlxRect;
 import flixel.text.FlxText;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import flixel.util.FlxStringUtil;
+import flixel.util.FlxTimer;
 import openfl.filters.ShaderFilter;
 
 class PlayState extends FlxState
@@ -19,6 +24,8 @@ class PlayState extends FlxState
 	var canvas:FlxSprite;
 	var waveformCamera:FlxCamera;
 	var waveform:FlxWaveform;
+	var waveformLeft:FlxWaveform;
+	var waveformRight:FlxWaveform;
 
 	var hudCamera:FlxCamera;
 
@@ -30,17 +37,19 @@ class PlayState extends FlxState
 
 	var conductor:Conductor;
 
+	var coolScroll:FlxText;
+
 	override public function create()
 	{
 		super.create();
 
 		bgColor = 0xFF000000;
 
+		FlxG.fixedTimestep = false;
 		FlxG.updateFramerate = 60;
 		FlxG.drawFramerate = 60;
 
 		music = cast FlxG.sound.load("assets/canvas4d mixshit 4.ogg");
-		music.play();
 
 		conductor = new Conductor(85);
 		conductor.targetSound = music;
@@ -77,8 +86,8 @@ class PlayState extends FlxState
 		waveform = new FlxWaveform(0, 0, FlxG.width, FlxG.height, FlxColor.WHITE, FlxColor.TRANSPARENT);
 		waveform.loadDataFromFlxSound(music);
 		waveform.waveformDuration = 100;
-		waveform.waveformGainMultiplier = 2;
-		// waveform.waveformDrawBaseline = true;
+		waveform.waveformGainMultiplier = 1.7;
+		waveform.waveformDrawBaseline = true;
 		// waveform.waveformDrawMode = SPLIT_CHANNELS;
 		add(waveform);
 
@@ -91,23 +100,125 @@ class PlayState extends FlxState
 		waveformCamera.filters = [new ShaderFilter(circle)];
 		circle.bitmap.wrap = REPEAT;
 
-		// conductor.onStepHit.add(colorBlockStep);
+		var waveformPadding:Int = Std.int(curTime.y + curTime.height + 5);
+		var waveformPadding2:Int = waveformPadding * 2;
+
+		waveformLeft = new FlxWaveform(0, waveformPadding, 30, FlxG.height - waveformPadding2, FlxColor.WHITE, FlxColor.TRANSPARENT);
+		waveformLeft.loadDataFromFlxWaveformBuffer(waveform.waveformBuffer);
+		waveformLeft.waveformDuration = 1000;
+		waveformLeft.waveformGainMultiplier = 1.5;
+		waveformLeft.waveformOrientation = VERTICAL;
+		waveformLeft.waveformDrawMode = SINGLE_CHANNEL(0);
+		waveformLeft.waveformDrawBaseline = true;
+		add(waveformLeft);
+
+		waveformRight = new FlxWaveform(FlxG.width - 30, waveformPadding, 30, FlxG.height - waveformPadding2, FlxColor.WHITE, FlxColor.TRANSPARENT);
+		waveformRight.loadDataFromFlxWaveformBuffer(waveform.waveformBuffer);
+		waveformRight.waveformDuration = 1000;
+		waveformRight.waveformGainMultiplier = 1.5;
+		waveformRight.waveformOrientation = VERTICAL;
+		waveformRight.waveformDrawMode = SINGLE_CHANNEL(1);
+		waveformRight.waveformDrawBaseline = true;
+		add(waveformRight);
+
+		coolScroll = new FlxText(0, 0, 0, "A Crazy Town - canvas4d");
+		coolScroll.y = FlxG.height - coolScroll.height - 5;
+		coolScroll.x = -coolScroll.width;
+		add(coolScroll);
+
+		conductor.onBeatHit.add((beat:Int) ->
+		{
+			if (beat >= 8 && beat != 15)
+			{
+				FlxTween.cancelTweensOf(dvd);
+				dvd.scale.set(1.075, 1.075);
+				FlxTween.tween(dvd, {"scale.x": 1, "scale.y": 1}, conductor.beatLength / 1000, {ease: FlxEase.sineOut});
+			}
+		});
+
+		// Hide everything and show it when we do intro
+		curTime.alpha = 0;
+		remainingTime.alpha = 0;
+		bar.alpha = 0;
+		dvd.alpha = 0;
+		waveform.alpha = 0;
+		waveformLeft.alpha = 0;
+		waveformRight.alpha = 0;
 	}
 
 	override public function update(elapsed:Float)
 	{
 		super.update(elapsed);
 
-		if (music.playing)
+		FlxG.watch.addQuick("beat", conductor.curBeat);
+
+		if (doneIntro)
 		{
-			waveform.waveformTime = music.position;
-			bar.clipRect.width = (music.position / music.length) * FlxG.width;
+			if (music.playing)
+			{
+				waveform.waveformTime = music.position;
+				waveformLeft.waveformTime = music.position;
+				waveformRight.waveformTime = music.position;
 
-			curTime.text = FlxStringUtil.formatTime(music.position / 1000, false);
-			remainingTime.text = FlxStringUtil.formatTime((music.length - music.position) / 1000, false);
-			remainingTime.x = FlxG.width - remainingTime.width - 5;
+				bar.clipRect.width = (music.position / music.length) * bar.width;
+
+				curTime.text = FlxStringUtil.formatTime(music.position / 1000, false);
+				remainingTime.text = FlxStringUtil.formatTime((music.length - music.position) / 1000, false);
+				remainingTime.x = FlxG.width - remainingTime.width - 5;
+				coolScroll.x += elapsed * 16;
+				if (coolScroll.x > (FlxG.width + coolScroll.width))
+					coolScroll.x = -coolScroll.width;
+			}
+
+			dvd.angle += conductor.beatLength / 1000;
 		}
+		else
+		{
+			if (FlxG.keys.justPressed.SPACE && !inIntro)
+			{
+				playIntro();
+			}
+		}
+	}
 
-		dvd.angle += conductor.beatLength / 1000;
+	var inIntro:Bool = false;
+	var doneIntro:Bool = false;
+
+	function playIntro():Void
+	{
+		inIntro = true;
+
+		var fakeDVD:FlxSprite = new FlxSprite().loadGraphic("assets/dvd2.png");
+		fakeDVD.x = -fakeDVD.width;
+		fakeDVD.angle = -180 * 2;
+		fakeDVD.screenCenter(Y);
+		add(fakeDVD);
+
+		var fakeDVDCenterX:Float = (FlxG.width - fakeDVD.width) / 2;
+
+		FlxTween.tween(fakeDVD, {x: fakeDVDCenterX, angle: 0}, 3, {
+			ease: FlxEase.quadInOut,
+			onComplete: (t:FlxTween) ->
+			{
+				dvd.alpha = 1;
+				fakeDVD.alpha = 0;
+
+				curTime.text = FlxStringUtil.formatTime(music.position / 1000, false);
+				remainingTime.text = FlxStringUtil.formatTime((music.length - music.position) / 1000, false);
+				remainingTime.x = FlxG.width - remainingTime.width - 5;
+
+				music.play();
+				doneIntro = true;
+
+				FlxTween.tween(curTime, {alpha: 1}, 2.5);
+				FlxTween.tween(remainingTime, {alpha: 1}, 2.5);
+				FlxTween.tween(bar, {alpha: 1}, 2.5);
+				FlxTween.tween(waveform, {alpha: 1}, 5);
+				FlxTween.tween(waveformLeft, {alpha: 1}, 5);
+				FlxTween.tween(waveformRight, {alpha: 1}, 5);
+			}
+		});
+
+		// music.play();
 	}
 }

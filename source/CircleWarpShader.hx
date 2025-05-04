@@ -43,7 +43,8 @@ class CircleWarpShader extends FlxGraphicsShader
         // 3rd version (no branching, ugly)
         // tUV.x = atan(uv.y/uv.x)/dPI+0.5*(1.-clamp(uv.x,0.0,1.0)/uv.x);
         tUV.x = atan(uv.y, uv.x) / dPI;
-        tUV.x = fract(tUV.x);  // ensures value wraps cleanly around [0, 1)
+        tUV.x = fract(tUV.x);
+        tUV.x = clamp(tUV.x, 0.0, 0.99);
 
         tUV.y = (d-sR)/(bR-sR);
         
@@ -59,7 +60,7 @@ class CircleWarpShader extends FlxGraphicsShader
     {
         super();
 
-        this.sR.value = [0.7];
-        this.bR.value = [1.0];
+		this.sR.value = [0.75];
+		this.bR.value = [0.95];
     }
 }
