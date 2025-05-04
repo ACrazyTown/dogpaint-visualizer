@@ -6,6 +6,7 @@ import flixel.FlxSprite;
 import flixel.FlxState;
 import flixel.addons.display.waveform.FlxWaveform;
 import flixel.addons.plugin.taskManager.FlxTask;
+import flixel.graphics.frames.FlxAtlasFrames;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.math.FlxMath;
 import flixel.math.FlxPoint;
@@ -39,6 +40,8 @@ class PlayState extends FlxState
 
 	var coolScroll:FlxText;
 
+	var pianoBoy:FlxSprite;
+
 	override public function create()
 	{
 		super.create();
@@ -58,9 +61,16 @@ class PlayState extends FlxState
 		// canvas = new FlxSprite(0, 100).makeGraphic(500, 500);
 		// add(canvas);
 
+		waveformCamera = new FlxCamera();
+		waveformCamera.bgColor.alpha = 0;
+		FlxG.cameras.add(waveformCamera, false);
+		var circle = new CircleWarpShader();
+		waveformCamera.filters = [new ShaderFilter(circle)];
+		circle.bitmap.wrap = REPEAT;
+
 		hudCamera = new FlxCamera();
 		hudCamera.bgColor.alpha = 0;
-		FlxG.cameras.add(hudCamera, false);
+		FlxG.cameras.add(hudCamera, true);
 
 		dvd = new FlxSprite().loadGraphic("assets/dvd2.png");
 		dvd.screenCenter();
@@ -89,16 +99,8 @@ class PlayState extends FlxState
 		waveform.waveformGainMultiplier = 1.7;
 		waveform.waveformDrawBaseline = true;
 		// waveform.waveformDrawMode = SPLIT_CHANNELS;
-		add(waveform);
-
-		waveformCamera = new FlxCamera();
-		waveformCamera.bgColor.alpha = 0;
-		FlxG.cameras.add(waveformCamera, false);
 		waveform.camera = waveformCamera;
-
-		var circle = new CircleWarpShader();
-		waveformCamera.filters = [new ShaderFilter(circle)];
-		circle.bitmap.wrap = REPEAT;
+		add(waveform);
 
 		var waveformPadding:Int = Std.int(curTime.y + curTime.height + 5);
 		var waveformPadding2:Int = waveformPadding * 2;
@@ -121,6 +123,15 @@ class PlayState extends FlxState
 		waveformRight.waveformDrawBaseline = true;
 		add(waveformRight);
 
+		pianoBoy = new FlxSprite();
+		pianoBoy.frames = FlxAtlasFrames.fromSparrow("assets/piano.png", "assets/piano.xml");
+		pianoBoy.animation.addByIndices("idle", "funny play", [1], "", 24);
+		pianoBoy.animation.addByIndices("play", "funny play", [2, 3, 4, 5, 6, 7], "", 24, false);
+		pianoBoy.animation.play("idle");
+		pianoBoy.y = FlxG.height + pianoBoy.height;
+		pianoBoy.screenCenter(X);
+		add(pianoBoy);
+
 		coolScroll = new FlxText(0, 0, 0, "A Crazy Town - canvas4d");
 		coolScroll.y = FlxG.height - coolScroll.height - 5;
 		coolScroll.x = -coolScroll.width;
@@ -133,6 +144,50 @@ class PlayState extends FlxState
 				FlxTween.cancelTweensOf(dvd);
 				dvd.scale.set(1.075, 1.075);
 				FlxTween.tween(dvd, {"scale.x": 1, "scale.y": 1}, conductor.beatLength / 1000, {ease: FlxEase.sineOut});
+			}
+			if (beat == 32)
+			{
+				FlxTween.tween(pianoBoy, {y: FlxG.height - pianoBoy.height + 30}, (conductor.beatLength * 16) / 1000, {
+					ease: FlxEase.quadOut,
+					onComplete: (t:FlxTween) ->
+					{
+						pianoBoy.animation.play("play");
+					}
+				});
+			}
+		});
+
+		// don't ask
+		var stepsToPlay:Array<Int> = [4, 7, 9, 11, 15, 31, 33, 36, 37, 39, 47, 59, 63];
+		for (i in 0...stepsToPlay.length)
+			stepsToPlay[i] += 191;
+
+		// trace(stepsToPlay);
+
+		// dog manager
+		var gettingRidOfTheDogCauseWeDontWantYouAnymore:Bool = false;
+		conductor.onStepHit.add((step:Int) ->
+		{
+			if (conductor.curBeat >= 48 && conductor.curBeat <= 64)
+			{
+				// if (step == 204)
+				// {
+				// 	pianoBoy.animation.play("idle", true);
+				// }
+
+				if (stepsToPlay[0] == step)
+				{
+					stepsToPlay.shift();
+					pianoBoy.animation.play("play", true);
+				}
+			}
+
+			if (conductor.curBeat >= 64 && !gettingRidOfTheDogCauseWeDontWantYouAnymore)
+			{
+				pianoBoy.animation.play("idle", true);
+
+				FlxTween.tween(pianoBoy, {y: FlxG.height + pianoBoy.height}, (conductor.beatLength * 4) / 1000, {startDelay: conductor.beatLength / 1000, ease: FlxEase.quadInOut});
+				gettingRidOfTheDogCauseWeDontWantYouAnymore = true;
 			}
 		});
 
@@ -151,6 +206,7 @@ class PlayState extends FlxState
 		super.update(elapsed);
 
 		FlxG.watch.addQuick("beat", conductor.curBeat);
+		FlxG.watch.addQuick("step", conductor.curStep);
 
 		if (doneIntro)
 		{

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<TextureAtlas imagePath="piano.png" width="470" height="510">
+	<SubTexture name="funny play0001" x="1" y="1" width="235" height="259" frameX="-1" frameY="-1" frameWidth="241" frameHeight="266"/>
+	<SubTexture name="funny play0002" x="1" y="263" width="226" height="246" frameX="-1" frameY="-14" frameWidth="241" frameHeight="266"/>
+	<SubTexture name="funny play0003" x="1" y="263" width="226" height="246" frameX="-1" frameY="-14" frameWidth="241" frameHeight="266"/>
+	<SubTexture name="funny play0004" x="239" y="262" width="226" height="247" frameX="-1" frameY="-13" frameWidth="241" frameHeight="266"/>
+	<SubTexture name="funny play0005" x="239" y="262" width="226" height="247" frameX="-1" frameY="-13" frameWidth="241" frameHeight="266"/>
+	<SubTexture name="funny play0006" x="239" y="1" width="230" height="258" frameX="-1" frameY="-2" frameWidth="241" frameHeight="266"/>
+	<SubTexture name="funny play0007" x="239" y="1" width="230" height="258" frameX="-1" frameY="-2" frameWidth="241" frameHeight="266"/>
+</TextureAtlas>
