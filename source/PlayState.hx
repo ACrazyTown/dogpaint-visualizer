@@ -61,7 +61,7 @@ class PlayState extends FlxState
 
 		// canvas = new FlxSprite(0, 100).makeGraphic(500, 500);
 		// add(canvas);
-
+		
 		wiggleEffect = new WiggleEffect();
 		wiggleEffect.effectType = FLAG;
 		wiggleEffect.waveAmplitude = 0.08;
